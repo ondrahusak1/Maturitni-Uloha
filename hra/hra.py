@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS history (
 )""")
 conn.commit()
 
+
 def show_databse():
     screen.fill(bg_color)
     history_text = game_font.render("Historie výsledků", True, light_gray)
