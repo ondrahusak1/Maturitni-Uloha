@@ -1,4 +1,4 @@
-import pygame, sys, random, sqlite3
+import pygame, sys, random, sqlite3, math
 
 conn = sqlite3.connect("game_history.db")
 cursor = conn.cursor()
@@ -245,6 +245,7 @@ def ball_restart():
     else:
         ball_speed_y = 7 * random.choice((1, -1))
         ball_speed_x = 7 * random.choice((1, -1))
+        
         score_time = None
 
 pygame.init()
