@@ -403,9 +403,9 @@ while True:
         power_up_timer += 1
         if power_up_timer > 500:  # 500 snímků = cca 8 sekund
             power_up_active = False
-            player.height = 140
-            ball_speed_x /= 1.5
-            ball_speed_y /= 1.5
+            player.height = 140 
+            ball_speed_x /= 1.5 #Zrychlení míčku 1,5krát
+            ball_speed_y /= 1.5 #Zrychlení míčku 1,5krát
             power_up_timer = 0
 
     pygame.display.flip() # Aktualizace obrazovky
