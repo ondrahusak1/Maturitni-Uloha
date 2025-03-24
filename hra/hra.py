@@ -163,53 +163,50 @@ def set_difficulty():
 
 #Jak se míček hýbe
 def ball_animation():
-    global ball_speed_x, ball_speed_y, player_score, opponent_score, score_time
-    
-    # Počet kroků pro kontrolu kolize
-    steps = int(max(abs(ball_speed_x), abs(ball_speed_y)))
-    for step in range(steps):
-        ball.x += ball_speed_x / steps
-        ball.y += ball_speed_y / steps
+    global ball_speed_x, ball_speed_y, player_score, opponent_score, score_time, prekazka_x, prekazka_y
 
-        # Odražení míčku od stropu nebo podlahy
-        if ball.top <= 0 or ball.bottom >= screen_height:
-            ball_speed_y *= -1
+    ball.x += ball_speed_x
+    ball.y += ball_speed_y
 
-        # Gól hráče
-        if ball.left <= 0:
-            pygame.mixer.Sound.play(score_sound)
-            player_score += 1
-            score_time = pygame.time.get_ticks()
-            break
+    # Odražení míčku od stropu nebo podlahy
+    if ball.top <= 0 or ball.bottom >= screen_height:
+        ball_speed_y *= -1
 
-        # Gól opponent
-        if ball.right >= screen_width:
-            pygame.mixer.Sound.play(score_sound)
-            opponent_score += 1
-            score_time = pygame.time.get_ticks()
-            break
+    # Gól hráče
+    if ball.left <= 0:
+        pygame.mixer.Sound.play(score_sound)
+        player_score += 1
+        score_time = pygame.time.get_ticks()
+        prekazka.x = screen_width / 2 - 5  # Reset překážky na startovní pozici
+        prekazka.y = screen_height / 1 - 70
+        ball_restart()  # Voláme ball_restart() pro reset míčku
+        
 
-        # Kolize míčku s hráčem a jeho odražení
-        if ball.colliderect(player) and ball_speed_x > 0:
-            ball_speed_x *= -1.1  # Zrychlení míčku při odražení
-            ball_speed_y *= 1.1  # Zrychlení míčku při odražení
-            break
+    # Gól opponent
+    if ball.right >= screen_width:
+        pygame.mixer.Sound.play(score_sound)
+        opponent_score += 1
+        score_time = pygame.time.get_ticks()
+        prekazka.x = screen_width / 2 - 5  # Reset překážky na startovní pozici
+        prekazka.y = screen_height / 1 - 70
+        ball_restart() # Voláme ball_restart() pro reset míčku
 
-        # Kolize míčku s opponentem a jeho odražení
-        if ball.colliderect(opponent) and ball_speed_x < 0:
-            ball_speed_x *= -1.1  # Zrychlení míčku při odražení
-            ball_speed_y *= 1.1  # Zrychlení míčku při odražení
-            break
+    # Kolize míčku s hráčem a jeho odražení
+    if ball.colliderect(player) and ball_speed_x > 0:
+        ball_speed_x *= -1.1
+        ball_speed_y *= 1.1
 
-        if ball.colliderect(prekazka) and ball_speed_x > 0:
-            ball_speed_x *= -1.1  # Zrychlení míčku při odražení
-            ball_speed_y *= 1.1  # Zrychlení míčku při odražení
-            break
-        if ball.colliderect(prekazka) and ball_speed_x < 0:
-            if opponent_mode: "Hard"
-            ball_speed_x *= -1.1  # Zrychlení míčku při odražení
-            ball_speed_y *= 1.1  # Zrychlení míčku při odražení
-            break
+    # Kolize míčku s opponentem a jeho odražení
+    if ball.colliderect(opponent) and ball_speed_x < 0:
+        ball_speed_x *= -1.1
+        ball_speed_y *= 1.1
+
+    if ball.colliderect(prekazka) and ball_speed_x > 0:
+        ball_speed_x *= -1.1
+        ball_speed_y *= 1.1
+    if ball.colliderect(prekazka) and ball_speed_x < 0:
+        ball_speed_x *= -1.1
+        ball_speed_y *= 1.1
 
 # Pohyb hráče
 def player_animation():
@@ -287,6 +284,7 @@ def ball_restart():
         ball_speed_y = 7 * random.choice((1, -1))
         ball_speed_x = 7 * random.choice((1, -1))
         prekazka_speed = 7
+        
 
         score_time = None
 
