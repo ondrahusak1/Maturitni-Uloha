@@ -13,48 +13,6 @@ CREATE TABLE IF NOT EXISTS history (
 )""")
 conn.commit()
 
-# Funkce pro zobrazení databáze (historie výsledků)
-def show_databse():
-    screen.fill(bg_color) # Vyplnění obrazovky pozadím
-    history_text = game_font.render("Historie výsledků", True, light_gray) # Vytvoření textu pro název
-    back_text = game_font.render("Zpět do hlavního menu", True, light_gray) # Vytvoření textu pro tlačítko "Zpět"
-    delete_text = game_font.render("Vymazat historii", True, light_gray) # Vytvoření textu pro tlačítko "Vymazat"
-
-    history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3)) # Pozice textu "Historie výsledků"
-    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5)) # Pozice textu "Zpět"
-    delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3)) # Pozice textu "Vymazat"
-
-    screen.blit(history_text, history_rect) # Vykreslení textu "Historie výsledků"
-    screen.blit(back_text, back_rect) # Vykreslení textu "Zpět"
-    screen.blit(delete_text, delete_rect) # Vykreslení textu "Vymazat"
-    pygame.display.flip() # Aktualizace obrazovky
-
-    # Načtení a zobrazení posledních 5 výsledků z databáze
-    cursor.execute("SELECT player_score, opponent_score FROM history ORDER BY id DESC LIMIT 5")
-    history = cursor.fetchall() # Načtení výsledků z databáze
-    for i, (player_score, opponent_score) in enumerate(history):
-        history_text = f"Hráč: {player_score} - CPU: {opponent_score}" # Formátování textu pro zobrazení výsledků
-        history_rect = game_font.render(history_text, True, light_gray) # Vytvoření textu pro zobrazení výsledků
-        screen.blit(history_rect, (500, 400 + i * 30)) # Vykreslení textu s výsledky
-
-    pygame.display.flip() # Aktualizace obrazovky
-
-    # Zpracování událostí pro navigaci v menu databáze
-    global opponent_mode
-    waiting = True
-    while waiting:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_rect.collidepoint(event.pos): # Pokud klikneme na "Zpět"
-                    show_title_screen() # Zobrazení hlavního menu
-                if delete_rect.collidepoint(event.pos): # Pokud klikneme na "Vymazat"
-                    cursor.execute("DELETE FROM history") # Vymazání historie z databáze
-                    conn.commit() # Uložení změn do databáze
-                    print("Historie zápasů byla smazána") # Výpis potvrzení do konzole
-                    opponent_mode = "historie" # Nastavení režimu hry
 
 # Funkce pro zobrazení hlavního menu
 def show_title_screen():
@@ -95,6 +53,49 @@ def show_title_screen():
                     opponent_mode = "historie" # Nastavení režimu hry na "historie"
                     show_databse() # Zobrazení historie výsledků
                     waiting = False
+# Funkce pro zobrazení databáze (historie výsledků)
+def show_databse():
+    screen.fill(bg_color) # Vyplnění obrazovky pozadím
+    history_text = game_font.render("Historie výsledků", True, light_gray) # Vytvoření textu pro název
+    back_text = game_font.render("Zpět do hlavního menu", True, light_gray) # Vytvoření textu pro tlačítko "Zpět"
+    delete_text = game_font.render("Vymazat historii", True, light_gray) # Vytvoření textu pro tlačítko "Vymazat"
+
+    history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3)) # Pozice textu "Historie výsledků"
+    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5)) # Pozice textu "Zpět"
+    delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3)) # Pozice textu "Vymazat"
+
+    screen.blit(history_text, history_rect) # Vykreslení textu "Historie výsledků"
+    screen.blit(back_text, back_rect) # Vykreslení textu "Zpět"
+    screen.blit(delete_text, delete_rect) # Vykreslení textu "Vymazat"
+    pygame.display.flip() # Aktualizace obrazovky
+
+    # Načtení a zobrazení posledních 5 výsledků z databáze
+    cursor.execute("SELECT player_score, opponent_score FROM history ORDER BY id DESC LIMIT 5")
+    history = cursor.fetchall() # Načtení výsledků z databáze
+    for i, (player_score, opponent_score) in enumerate(history):
+        history_text = f"Hráč: {player_score} - CPU: {opponent_score}" # Formátování textu pro zobrazení výsledků
+        history_rect = game_font.render(history_text, True, light_gray) # Vytvoření textu pro zobrazení výsledků
+        screen.blit(history_rect, (500, 400 + i * 30)) # Vykreslení textu s výsledky
+
+    pygame.display.flip() # Aktualizace obrazovky
+
+    # Zpracování událostí pro navigaci v menu databáze
+    global opponent_mode
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_rect.collidepoint(event.pos): # Pokud klikneme na "Zpět"
+                    waiting = False
+                    show_title_screen() # Zobrazení hlavního menu
+                if delete_rect.collidepoint(event.pos): # Pokud klikneme na "Vymazat"
+                    cursor.execute("DELETE FROM history") # Vymazání historie z databáze
+                    conn.commit() # Uložení změn do databáze
+                    print("Historie zápasů byla smazána") # Výpis potvrzení do konzole
+                    opponent_mode = "historie" # Nastavení režimu hry
 
 # Funkce pro zobrazení menu výběru obtížnosti AI
 def show_difficulty_menu():
@@ -141,6 +142,8 @@ def show_difficulty_menu():
                     waiting = False # Ukončení čekání na události
                 if back_rect.collidepoint(event.pos): # Pokud klikneme na "Zpět"
                     show_title_screen() # Zobrazení hlavního menu
+                    waiting = False
+
 
 # Funkce pro nastavení obtížnosti AI
 def set_difficulty():
@@ -414,3 +417,5 @@ while True:
         conn.commit()
         opponent_mode = None
         player_score, opponent_score = 0,0
+
+        show_title_screen()
