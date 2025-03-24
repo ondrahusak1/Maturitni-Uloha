@@ -48,7 +48,7 @@ def show_databse():
                 pygame.quit()
                 sys.exit
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_rect.collidepoint(event.pos): # Pokud hrář klikne na tlačíátko zpět vrátí ho to do hlavního menu
+                if back_rect.collidepoint(event.pos): # Pokud hráč klikne na tlačíátko zpět vrátí ho to do hlavního menu
                     show_title_screen() 
                 if delete_rect.collidepoint(event.pos):
                     cursor.execute("DELETE  FROM history") # Vymazaní všech záznamů z tabulky
@@ -159,7 +159,7 @@ def set_difficulty():
     elif game_difficulty == "Medium":
         opponent_speed = 6
     elif game_difficulty == "Hard":
-        opponent_speed = 10
+        opponent_speed = 15
 
 #Jak se míček hýbe
 def ball_animation():
@@ -201,10 +201,20 @@ def ball_animation():
             ball_speed_y *= 1.1  # Zrychlení míčku při odražení
             break
 
+        if ball.colliderect(prekazka) and ball_speed_x > 0:
+            ball_speed_x *= -1.1  # Zrychlení míčku při odražení
+            ball_speed_y *= 1.1  # Zrychlení míčku při odražení
+            break
+        if ball.colliderect(prekazka) and ball_speed_x < 0:
+            if opponent_mode: "Hard"
+            ball_speed_x *= -1.1  # Zrychlení míčku při odražení
+            ball_speed_y *= 1.1  # Zrychlení míčku při odražení
+            break
+
 # Pohyb hráče
 def player_animation():
     player.y += player_speed
-    #Ometení pohybu hráče na obrazovce
+    #Omezení pohybu hráče na obrazovce
     if player.top <= 0:
         player.top = 0
     if player.bottom >= screen_height:
@@ -230,9 +240,24 @@ def opponent_animation():
     if opponent.bottom >= screen_height:
         opponent.bottom = screen_height
 
+def prekazka_animace():
+    global prekazka_speed
+
+    # Pohyb překážky
+    prekazka.y += prekazka_speed
+
+    # Kontrola hranic, aby překážka zůstala v herní ploše
+    if prekazka.top <= 0:
+        prekazka.top = 0  # Zajistí, že překážka nepřesáhne horní hranici
+        prekazka_speed *= -1  # Obrátí směr pohybu
+
+    if prekazka.bottom >= screen_height:
+        prekazka.bottom = screen_height  # Zajistí, že překážka nepřesáhne spodní hranici
+        prekazka_speed *= -1  # Obrátí směr pohybu
+
 # Restartování míčku po gólu
 def ball_restart():
-    global ball_speed_x, ball_speed_y, score_time
+    global ball_speed_x, ball_speed_y, score_time, prekazka_speed
 
     current_time = pygame.time.get_ticks()
     ball.center = (screen_width / 2, screen_height / 2)
@@ -256,11 +281,12 @@ def ball_restart():
 
     # Kontrola toho aby míček opravdu vyletěl až bude 0
     if current_time - score_time < 2800:
-        ball_speed_x, ball_speed_y = 0, 0
+        ball_speed_x, ball_speed_y, prekazka_speed = 0, 0, 0
     # Vypuštění míčku do hry po odbytí 0
     else:
         ball_speed_y = 7 * random.choice((1, -1))
         ball_speed_x = 7 * random.choice((1, -1))
+        prekazka_speed = 7
 
         score_time = None
 
@@ -276,6 +302,8 @@ pygame.display.set_caption("Pong")
 ball = pygame.Rect(screen_width / 2 - 15, screen_height / 2 - 15, 30, 30)
 player = pygame.Rect(screen_width - 20, screen_height / 2 - 70, 10, 140)
 opponent = pygame.Rect(10, screen_height / 2 - 70, 10, 140)
+prekazka = pygame.Rect(screen_width / 2 - 5, screen_height / 1 - 70, 10, 180)
+opponent_hard = pygame.Rect(10, screen_height / 2 - 70, 10, 200)
 
 # Nastevní našich basic barev
 bg_color = pygame.Color("grey12")
@@ -285,7 +313,8 @@ light_gray = (200, 200, 200)
 ball_speed_x = 7 * random.choice((1, -1))
 ball_speed_y = 7 * random.choice((1, -1))
 player_speed = 0
-opponent_speed = 7
+opponent_speed = 10
+prekazka_speed = 12
 ball_moving = False
 score_time = True
 
@@ -316,15 +345,17 @@ while True:
                 player_speed -= 7
             if event.key == pygame.K_UP:
                 player_speed += 7
-                
+    
     ball_animation()
     player_animation()
     opponent_animation()
+    prekazka_animace()
 
     # Vykreslení pozadí hry
     screen.fill(bg_color)
     pygame.draw.rect(screen, light_gray, player)
     pygame.draw.rect(screen, light_gray, opponent)
+    pygame.draw.rect(screen, light_gray, prekazka)
     pygame.draw.ellipse(screen, light_gray, ball)
     pygame.draw.aaline(screen, light_gray, (screen_width / 2, 0), (screen_width / 2, screen_height))
 
