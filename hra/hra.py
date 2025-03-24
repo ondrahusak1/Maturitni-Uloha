@@ -1,132 +1,124 @@
 import pygame, sys, random, sqlite3, math
 
-conn = sqlite3.connect("game_history.db") # Vytvoření (nebo otevření) databázového souboru "game_history.db"
-cursor = conn.cursor() # Vytvoření kurzoru pro provádění SQL příkazů
-cursor. execute("""
+# Připojení k databázi SQLite
+conn = sqlite3.connect("game_history.db")
+cursor = conn.cursor()
+
+# Vytvoření tabulky pro ukládání historie her (pokud neexistuje)
+cursor.execute("""
 CREATE TABLE IF NOT EXISTS history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,  
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_score INTEGER,
     opponent_score INTEGER
-)""") # Vytvoření lehké databáze
-conn.commit() # Uložení změn do databáze
+)""")
+conn.commit()
 
-# Nastavení obrazovky pro databázi
+# Funkce pro zobrazení databáze (historie výsledků)
 def show_databse():
-    screen.fill(bg_color)     # Vyplnění obrazovky pozadí (barvou definovanou v 'bg_color')
-    # Vytvoření textu pro název "Historie výsledků", "Zpět do hlavního menu" a "Vymazat historii"
-    history_text = game_font.render("Historie výsledků", True, light_gray)
-    back_text = game_font.render("Zpět do hlavního menu", True, light_gray)
-    delete_text = game_font.render("Vymazat historii", True, light_gray)
+    screen.fill(bg_color) # Vyplnění obrazovky pozadím
+    history_text = game_font.render("Historie výsledků", True, light_gray) # Vytvoření textu pro název
+    back_text = game_font.render("Zpět do hlavního menu", True, light_gray) # Vytvoření textu pro tlačítko "Zpět"
+    delete_text = game_font.render("Vymazat historii", True, light_gray) # Vytvoření textu pro tlačítko "Vymazat"
 
-    # Určení pozice, kde se každý text bude zobrazovat (střed obrazovky)
-    history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3))
-    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5))
-    delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3))
+    history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3)) # Pozice textu "Historie výsledků"
+    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5)) # Pozice textu "Zpět"
+    delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3)) # Pozice textu "Vymazat"
 
-    # Zobrazení textu na obrazovce na daných pozicích
-    screen.blit(history_text, history_rect)
-    screen.blit(back_text, back_rect)
-    screen.blit(delete_text, delete_rect)
-    pygame.display.flip() # Aktualizace displeje
+    screen.blit(history_text, history_rect) # Vykreslení textu "Historie výsledků"
+    screen.blit(back_text, back_rect) # Vykreslení textu "Zpět"
+    screen.blit(delete_text, delete_rect) # Vykreslení textu "Vymazat"
+    pygame.display.flip() # Aktualizace obrazovky
 
-    # Načtení historie zápasů
-    cursor.execute("SELECT player_score, opponent_score FROM history ORDER BY id DESC LIMIT 5") # Vybrání posledních 5 výsledků
-    history = cursor.fetchall() # Načtení výsledků dotazu do proměnné 'history'
-    for i, (player_score, opponent_score) in enumerate(history): # Zobrazení posledních 5 výsledků na obrazovce
-        history_text = f"Hráč: {player_score} - CPU: {opponent_score}"  # Formátování textu pro zobrazení skóre hráče a CPU
-        history_rect = game_font.render(history_text, True, light_gray) # Vytvoření textu na obrazovce
-        screen.blit(history_rect, (500, 400 + i * 30)) # Určení pozice pro text
+    # Načtení a zobrazení posledních 5 výsledků z databáze
+    cursor.execute("SELECT player_score, opponent_score FROM history ORDER BY id DESC LIMIT 5")
+    history = cursor.fetchall() # Načtení výsledků z databáze
+    for i, (player_score, opponent_score) in enumerate(history):
+        history_text = f"Hráč: {player_score} - CPU: {opponent_score}" # Formátování textu pro zobrazení výsledků
+        history_rect = game_font.render(history_text, True, light_gray) # Vytvoření textu pro zobrazení výsledků
+        screen.blit(history_rect, (500, 400 + i * 30)) # Vykreslení textu s výsledky
 
-    pygame.display.flip() # Aktualizace displeje, aby se změny projevily
+    pygame.display.flip() # Aktualizace obrazovky
 
-    # Nastavení režimu hry pro výběr akce
+    # Zpracování událostí pro navigaci v menu databáze
     global opponent_mode
     waiting = True
     while waiting:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit
+                sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_rect.collidepoint(event.pos): # Pokud hráč klikne na tlačíátko zpět vrátí ho to do hlavního menu
-                    show_title_screen() 
-                if delete_rect.collidepoint(event.pos):
-                    cursor.execute("DELETE  FROM history") # Vymazaní všech záznamů z tabulky
-                    conn.commit()
-                    print("Historie zápasů byla smazána") # Potvrzení o tom že databátze byla vymazána
-                    opponent_mode = "historie"
-                
-#nastavení základního menu
-def show_title_screen(): 
-    # Nastavení základního screenu, text na sprvném místě barvy, atd.
-    screen.fill(bg_color)
-    title_text = game_font.render("Ping-Pong", True, light_gray) 
-    menu_text = game_font.render("vs AI", True, light_gray)
-    hrac_text = game_font.render("vs 2.Hráč", True, light_gray)
-    database_text = game_font.render("Výsledky", True, light_gray)
+                if back_rect.collidepoint(event.pos): # Pokud klikneme na "Zpět"
+                    show_title_screen() # Zobrazení hlavního menu
+                if delete_rect.collidepoint(event.pos): # Pokud klikneme na "Vymazat"
+                    cursor.execute("DELETE FROM history") # Vymazání historie z databáze
+                    conn.commit() # Uložení změn do databáze
+                    print("Historie zápasů byla smazána") # Výpis potvrzení do konzole
+                    opponent_mode = "historie" # Nastavení režimu hry
 
-    title_rect = title_text.get_rect(center=(screen_width / 2, screen_height / 3))
-    menu_rect = menu_text.get_rect(center=(screen_width / 2, screen_height / 2))
-    hrac_rect = hrac_text.get_rect(center=(screen_width / 2, screen_height / 1.8))
-    database_rect = database_text.get_rect(center=(screen_width / 2, screen_height / 1.5))
+# Funkce pro zobrazení hlavního menu
+def show_title_screen():
+    screen.fill(bg_color) # Vyplnění obrazovky pozadím
+    title_text = game_font.render("Ping-Pong", True, light_gray) # Vytvoření textu pro název hry
+    menu_text = game_font.render("vs AI", True, light_gray) # Vytvoření textu pro režim hry "vs AI"
+    hrac_text = game_font.render("vs 2.Hráč", True, light_gray) # Vytvoření textu pro režim hry "vs 2.Hráč"
+    database_text = game_font.render("Výsledky", True, light_gray) # Vytvoření textu pro zobrazení výsledků
 
-    #Vykreslení textu na určených pozicívh a následná aktualizace displeje
-    screen.blit(title_text, title_rect)
-    screen.blit(menu_text, menu_rect)
-    screen.blit(hrac_text, hrac_rect)
-    screen.blit(database_text, database_rect)
-    pygame.display.flip()
+    title_rect = title_text.get_rect(center=(screen_width / 2, screen_height / 3)) # Pozice textu "Ping-Pong"
+    menu_rect = menu_text.get_rect(center=(screen_width / 2, screen_height / 2)) # Pozice textu "vs AI"
+    hrac_rect = hrac_text.get_rect(center=(screen_width / 2, screen_height / 1.8)) # Pozice textu "vs 2.Hráč"
+    database_rect = database_text.get_rect(center=(screen_width / 2, screen_height / 1.5)) # Pozice textu "Výsledky"
 
+    screen.blit(title_text, title_rect) # Vykreslení textu "Ping-Pong"
+    screen.blit(menu_text, menu_rect) # Vykreslení textu "vs AI"
+    screen.blit(hrac_text, hrac_rect) # Vykreslení textu "vs 2.Hráč"
+    screen.blit(database_text, database_rect) # Vykreslení textu "Výsledky"
+    pygame.display.flip() # Aktualizace obrazovky
 
-
-    #nastavení že při kliku na různé nápisy se nám objeví další menu
+    # Zpracování událostí pro výběr režimu hry v hlavním menu
     global opponent_mode, game_difficulty
     waiting = True
     while waiting:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: # Pokud hráč klikne na tlačíko pro zavření hry tak se hra vypne
+            if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN: # Nastavení když hráč klikne myší na text tak se vybere mód hry
-                if menu_rect.collidepoint(event.pos):
-                    opponent_mode = "AI"
-                    show_difficulty_menu()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if menu_rect.collidepoint(event.pos): # Pokud klikneme na "vs AI"
+                    opponent_mode = "AI" # Nastavení režimu hry na "vs AI"
+                    show_difficulty_menu() # Zobrazení menu pro výběr obtížnosti
                     waiting = False
-                if hrac_rect.collidepoint(event.pos):
-                    opponent_mode = "Player2"
+                if hrac_rect.collidepoint(event.pos): # Pokud klikneme na "vs 2.Hráč"
+                    opponent_mode = "Player2" # Nastavení režimu hry na "vs 2.Hráč"
+                    waiting = False
+                if database_rect.collidepoint(event.pos): # Pokud klikneme na "Výsledky"
+                    opponent_mode = "historie" # Nastavení režimu hry na "historie"
+                    show_databse() # Zobrazení historie výsledků
+                    waiting = False
 
-                    waiting = False
-                if database_rect.collidepoint(event.pos): # Když hráč klikne na ukázat historii otevře se mu database screen
-                    opponent_mode = "historie"
-                    show_databse()
-                    waiting = False
-
-#nastavení samotného menu na obtížnost
+# Funkce pro zobrazení menu výběru obtížnosti AI
 def show_difficulty_menu():
-    # Nastavení základního screenu, text na sprvném místě barvy, atd.
-    screen.fill(bg_color)
-    difficulty_text = game_font.render("Výběr obtížnosti", True, light_gray) 
-    easy_text = game_font.render("Easy", True, light_gray)
-    medium_text = game_font.render("Medium", True, light_gray)
-    hard_text = game_font.render("Hard", True, light_gray)
-    back_text = game_font.render("Zpět do hlavního menu", True, light_gray)
+    screen.fill(bg_color) # Vyplnění obrazovky pozadím
+    difficulty_text = game_font.render("Výběr obtížnosti", True, light_gray) # Vytvoření textu pro název menu
+    easy_text = game_font.render("Easy", True, light_gray) # Vytvoření textu pro obtížnost "Easy"
+    medium_text = game_font.render("Medium", True, light_gray) # Vytvoření textu pro obtížnost "Medium"
+    hard_text = game_font.render("Hard", True, light_gray) # Vytvoření textu pro obtížnost "Hard"
+    back_text = game_font.render("Zpět do hlavního menu", True, light_gray) # Vytvoření textu pro tlačítko "Zpět"
 
-
-    difficulty_rect = difficulty_text.get_rect(center=(screen_width / 2, screen_height / 3))
-    easy_rect = easy_text.get_rect(center=(screen_width / 2, screen_height / 2.2))
+    difficulty_rect = difficulty_text.get_rect(center=(screen_width / 2, screen_height / 3)) # Pozice textu "Výběr obtížnosti"
+    easy_rect = easy_text.get_rect(center=(screen_width / 2, screen_height / 2.2)) # Pozice textu "Easy"
     medium_rect = medium_text.get_rect(center=(screen_width / 2, screen_height / 2))
-    hard_rect = hard_text.get_rect(center=(screen_width / 2, screen_height / 1.8))
-    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5))
+    hard_rect = hard_text.get_rect(center=(screen_width / 2, screen_height / 1.8)) # Pozice textu "Hard"
+    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5)) # Pozice textu "Zpět"
 
-    screen.blit(difficulty_text, difficulty_rect)
-    screen.blit(easy_text, easy_rect)
-    screen.blit(medium_text, medium_rect)
-    screen.blit(hard_text, hard_rect)
-    screen.blit(back_text, back_rect)
-    pygame.display.flip()
+    screen.blit(difficulty_text, difficulty_rect) # Vykreslení textu "Výběr obtížnosti"
+    screen.blit(easy_text, easy_rect) # Vykreslení textu "Easy"
+    screen.blit(medium_text, medium_rect) # Vykreslení textu "Medium"
+    screen.blit(hard_text, hard_rect) # Vykreslení textu "Hard"
+    screen.blit(back_text, back_rect) # Vykreslení textu "Zpět"
+    pygame.display.flip() # Aktualizace obrazovky
 
-
-    #menu obtížností
+    # Zpracování událostí pro výběr obtížnosti AI
     global game_difficulty
     waiting = True
     while waiting:
@@ -135,131 +127,142 @@ def show_difficulty_menu():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if easy_rect.collidepoint(event.pos):
-                    game_difficulty = "Easy"
-                    set_difficulty()
-                    waiting = False
-                if medium_rect.collidepoint(event.pos):
-                    game_difficulty = "Medium"
-                    set_difficulty()
-                    waiting = False
-                if hard_rect.collidepoint(event.pos):
-                    game_difficulty = "Hard"
-                    set_difficulty()
-                    waiting = False
-                if back_rect.collidepoint(event.pos): # Pokud hrář klikne na tlačíátko zpět vrátí ho to do hlavního menu
-                    show_title_screen()
+                if easy_rect.collidepoint(event.pos): # Pokud klikneme na "Easy"
+                    game_difficulty = "Easy" # Nastavení obtížnosti na "Easy"
+                    set_difficulty() # Nastavení rychlosti AI podle obtížnosti
+                    waiting = False # Ukončení čekání na události
+                if medium_rect.collidepoint(event.pos): # Pokud klikneme na "Medium"
+                    game_difficulty = "Medium" # Nastavení obtížnosti na "Medium"
+                    set_difficulty() # Nastavení rychlosti AI podle obtížnosti
+                    waiting = False # Ukončení čekání na události
+                if hard_rect.collidepoint(event.pos): # Pokud klikneme na "Hard"
+                    game_difficulty = "Hard" # Nastavení obtížnosti na "Hard"
+                    set_difficulty() # Nastavení rychlosti AI podle obtížnosti
+                    waiting = False # Ukončení čekání na události
+                if back_rect.collidepoint(event.pos): # Pokud klikneme na "Zpět"
+                    show_title_screen() # Zobrazení hlavního menu
 
-#nastavení obtížností
+# Funkce pro nastavení obtížnosti AI
 def set_difficulty():
-    # Nastevní rychlost AI pro různé obtížnosti
     global opponent_speed
-    if game_difficulty == "Easy": 
-        opponent_speed = 4
-    elif game_difficulty == "Medium":
-        opponent_speed = 6
-    elif game_difficulty == "Hard":
-        opponent_speed = 15
+    if game_difficulty == "Easy": # Pokud je obtížnost "Easy"
+        opponent_speed = 4 # Nastavení rychlosti AI na 4
+    elif game_difficulty == "Medium": # Pokud je obtížnost "Medium"
+        opponent_speed = 6 # Nastavení rychlosti AI na 6
+    elif game_difficulty == "Hard": # Pokud je obtížnost "Hard"
+        opponent_speed = 15 # Nastavení rychlosti AI na 15
 
-#Jak se míček hýbe
+# Funkce pro animaci míčku
 def ball_animation():
-    global ball_speed_x, ball_speed_y, player_score, opponent_score, score_time, prekazka_x, prekazka_y
+    global ball_speed_x, ball_speed_y, player_score, opponent_score, score_time, prekazka_x, prekazka_y, ball_angle, ball_image, power_up, power_up_type, power_up_active
 
-    ball.x += ball_speed_x
-    ball.y += ball_speed_y
+    ball.x += ball_speed_x # Pohyb míčku po ose X
+    ball.y += ball_speed_y # Pohyb míčku po ose Y
 
-    # Odražení míčku od stropu nebo podlahy
+    # Odrážení míčku od horní a dolní stěny
     if ball.top <= 0 or ball.bottom >= screen_height:
-        ball_speed_y *= -1
+        ball_speed_y *= -1 # Změna směru míčku po ose Y
 
-    # Gól hráče
-    if ball.left <= 0:
-        pygame.mixer.Sound.play(score_sound)
-        player_score += 1
-        score_time = pygame.time.get_ticks()
-        prekazka.x = screen_width / 2 - 5  # Reset překážky na startovní pozici
+    # Detekce gólů
+    if ball.left <= 0: # Pokud míček opustí levou stranu obrazovky
+        pygame.mixer.Sound.play(score_sound) # Přehrání zvuku gólu
+        player_score += 1 # Zvýšení skóre hráče
+        score_time = pygame.time.get_ticks() # Uložení času gólu
+        prekazka.x = screen_width / 2 - 5 # Reset pozice překážky
         prekazka.y = screen_height / 1 - 70
-        ball_restart()  # Voláme ball_restart() pro reset míčku
+        ball_restart() # Restart míčku
         
 
-    # Gól opponent
-    if ball.right >= screen_width:
-        pygame.mixer.Sound.play(score_sound)
-        opponent_score += 1
-        score_time = pygame.time.get_ticks()
-        prekazka.x = screen_width / 2 - 5  # Reset překážky na startovní pozici
+    if ball.right >= screen_width: # Pokud míček opustí pravou stranu obrazovky
+        pygame.mixer.Sound.play(score_sound) # Přehrání zvuku gólu
+        opponent_score += 1 # Zvýšení skóre soupeře
+        score_time = pygame.time.get_ticks() # Uložení času gólu
+        prekazka.x = screen_width / 2 - 5 # Reset pozice překážky
         prekazka.y = screen_height / 1 - 70
-        ball_restart() # Voláme ball_restart() pro reset míčku
+        ball_restart() # Restart míčku
 
     # Kolize míčku s hráčem a jeho odražení
     if ball.colliderect(player) and ball_speed_x > 0:
-        ball_speed_x *= -1.1
-        ball_speed_y *= 1.1
+        ball_speed_x *= -1.1 # Změna směru a rychlosti míčku po ose X
+        ball_speed_y *= 1.1 # Změna rychlosti míčku po ose Y
 
-    # Kolize míčku s opponentem a jeho odražení
+    # Kolize míčku se soupeřem a jeho odražení
     if ball.colliderect(opponent) and ball_speed_x < 0:
-        ball_speed_x *= -1.1
-        ball_speed_y *= 1.1
+        ball_speed_x *= -1.1 # Změna směru a rychlosti míčku po ose X
+        ball_speed_y *= 1.1 # Změna rychlosti míčku po ose Y
 
-    if ball.colliderect(prekazka) and ball_speed_x > 0:
-        ball_speed_x *= -1.1
-        ball_speed_y *= 1.1
-    if ball.colliderect(prekazka) and ball_speed_x < 0:
-        ball_speed_x *= -1.1
-        ball_speed_y *= 1.1
+    # Kolize míčku s překážkou a jeho odražení
+    if ball.colliderect(prekazka):
+        ball_speed_x *= -1.1 # Změna směru a rychlosti míčku po ose X
+        ball_speed_y *= 1.1 # Změna rychlosti míčku po ose Y
 
-# Pohyb hráče
+    # Kolize míčku s power-upem
+    if power_up and ball.colliderect(power_up):
+        power_up_active = True # Aktivace power-upu
+        if power_up_type == "size": # Pokud je typ power-upu "size"
+            player.height *= 1.5 # Zvětšení výšky pálky hráče
+        elif power_up_type == "speed": # Pokud je typ power-upu "speed"
+            ball_speed_x *= 1.5 # Zrychlení míčku po ose X
+            ball_speed_y *= 1.5 # Zrychlení míčku po ose Y
+        power_up = None # Odstranění power-upu z obrazovky
+
+    ball_angle += 5 # Zvýšení úhlu rotace míčku
+    rotated_ball = pygame.transform.rotate(ball_image, ball_angle) # Rotace míčku
+    screen.blit(rotated_ball, ball.topleft) # Vykreslení rotovaného míčku
+
+# Funkce pro pohyb hráče
 def player_animation():
-    player.y += player_speed
-    #Omezení pohybu hráče na obrazovce
+    player.y += player_speed # Pohyb hráče po ose Y
+    # Omezení pohybu hráče na obrazovce
     if player.top <= 0:
         player.top = 0
     if player.bottom >= screen_height:
         player.bottom = screen_height
-# Pohyb opponenta
+
+# Funkce pro pohyb soupeře
 def opponent_animation():
-    #Pokud je soupeř AI
+    # Pokud je soupeř AI
     if opponent_mode == "AI":
-        if opponent.top < ball.y:
-            opponent.top += opponent_speed
-        if opponent.bottom > ball.y:
-            opponent.bottom -= opponent_speed
-    #Mód s 2 hráčem
-    else:  
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            opponent.y -= opponent_speed
-        if keys[pygame.K_s]:
-            opponent.y += opponent_speed
-    # Omezení pohybu spoeře na obrazovce
+        if opponent.top < ball.y: # Pokud je soupeř nad míčkem
+            opponent.top += opponent_speed # Pohyb soupeře dolů
+        if opponent.bottom > ball.y: # Pokud je soupeř pod míčkem
+            opponent.bottom -= opponent_speed # Pohyb soupeře nahoru
+    # Mód s 2 hráči
+    else:
+        keys = pygame.key.get_pressed() # Získání stisknutých kláves
+        if keys[pygame.K_w]: # Pokud je stisknuta klávesa "w"
+            opponent.y -= opponent_speed # Pohyb soupeře nahoru
+        if keys[pygame.K_s]: # Pokud je stisknuta klávesa "s"
+            opponent.y += opponent_speed # Pohyb soupeře dolů
+    # Omezení pohybu soupeře na obrazovce
     if opponent.top <= 0:
         opponent.top = 0
     if opponent.bottom >= screen_height:
         opponent.bottom = screen_height
 
+# Funkce pro animaci překážky
 def prekazka_animace():
     global prekazka_speed
 
-    # Pohyb překážky
-    prekazka.y += prekazka_speed
+    prekazka.y += prekazka_speed # Pohyb překážky po ose Y
 
     # Kontrola hranic, aby překážka zůstala v herní ploše
     if prekazka.top <= 0:
-        prekazka.top = 0  # Zajistí, že překážka nepřesáhne horní hranici
-        prekazka_speed *= -1  # Obrátí směr pohybu
+        prekazka.top = 0 # Zajistí, že překážka nepřesáhne horní hranici
+        prekazka_speed *= -1 # Obrátí směr pohybu
 
     if prekazka.bottom >= screen_height:
-        prekazka.bottom = screen_height  # Zajistí, že překážka nepřesáhne spodní hranici
-        prekazka_speed *= -1  # Obrátí směr pohybu
+        prekazka.bottom = screen_height # Zajistí, že překážka nepřesáhne spodní hranici
+        prekazka_speed *= -1 # Obrátí směr pohybu
 
-# Restartování míčku po gólu
+# Funkce pro restart míčku po gólu
 def ball_restart():
     global ball_speed_x, ball_speed_y, score_time, prekazka_speed
 
-    current_time = pygame.time.get_ticks()
-    ball.center = (screen_width / 2, screen_height / 2)
+    current_time = pygame.time.get_ticks() # Získání aktuálního času
+    ball.center = (screen_width / 2, screen_height / 2) # Nastavení míčku na střed obrazovky
 
-    #odpočítání od startu
+    # Odpočítávání od startu
     if current_time - score_time < 700:
         number_four = game_font.render("4", False, light_gray)
         screen.blit(number_four, (screen_width / 2 - 10, screen_height / 2 + 20))
@@ -284,90 +287,126 @@ def ball_restart():
         ball_speed_y = 7 * random.choice((1, -1))
         ball_speed_x = 7 * random.choice((1, -1))
         prekazka_speed = 7
-        
 
         score_time = None
 
-pygame.init()
-clock = pygame.time.Clock()
+pygame.init() # Inicializace Pygame
+clock = pygame.time.Clock() # Vytvoření objektu Clock pro řízení FPS
 
-#nastavení pozadí hry
+# Nastavení obrazovky
 screen_width = 1280
 screen_height = 960
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Pong")
+pygame.display.set_caption("Pong") # Nastavení titulku okna
 
-ball = pygame.Rect(screen_width / 2 - 15, screen_height / 2 - 15, 30, 30)
-player = pygame.Rect(screen_width - 20, screen_height / 2 - 70, 10, 140)
-opponent = pygame.Rect(10, screen_height / 2 - 70, 10, 140)
-prekazka = pygame.Rect(screen_width / 2 - 5, screen_height / 1 - 70, 10, 180)
-opponent_hard = pygame.Rect(10, screen_height / 2 - 70, 10, 200)
+# Vytvoření herních objektů
+ball = pygame.Rect(screen_width / 2 - 15, screen_height / 2 - 15, 30, 30) # Míček
+player = pygame.Rect(screen_width - 20, screen_height / 2 - 70, 10, 140) # Hráč
+opponent = pygame.Rect(10, screen_height / 2 - 70, 10, 140) # Soupeř
+prekazka = pygame.Rect(screen_width / 2 - 5, screen_height / 1 - 70, 10, 180) # Překážka
 
-# Nastevní našich basic barev
-bg_color = pygame.Color("grey12")
-light_gray = (200, 200, 200) 
+# Nastavení barev
+bg_color = pygame.Color("grey12") # Barva pozadí
+light_gray = (200, 200, 200) # Světle šedá barva
 
-# Nastavení rychlosti míčku a opponeta a směr míčku
-ball_speed_x = 7 * random.choice((1, -1))
-ball_speed_y = 7 * random.choice((1, -1))
-player_speed = 0
-opponent_speed = 10
-prekazka_speed = 12
-ball_moving = False
-score_time = True
+# Nastavení rychlostí a směru
+ball_speed_x = 7 * random.choice((1, -1)) # Rychlost míčku po ose X
+ball_speed_y = 7 * random.choice((1, -1)) # Rychlost míčku po ose Y
+player_speed = 0 # Rychlost hráče
+opponent_speed = 10 # Rychlost soupeře
+prekazka_speed = 12 # Rychlost překážky
+ball_moving = False # Stav míčku
+score_time = True # Stav odpočítávání po gólu
+ball_angle = 0 # Úhel rotace míčku
+ball_image = pygame.Surface((30, 30)) # Obrázek míčku
+ball_image.fill(light_gray) # Vyplnění obrázku míčku barvou
 
-# Vykreslení skóre 
+# Nastavení skóre a písma
 player_score = 0
 opponent_score = 0
 game_font = pygame.font.Font("freesansbold.ttf", 32)
 
-score_sound = pygame.mixer.Sound("score.ogg")
+# Načtení zvuků
+score_sound = pygame.mixer.Sound("score.ogg") # Zvuk gólu
 
-# Nastavení pohybu opponenta pro mód AI
-opponent_mode = "AI"
+# Nastavení režimu hry
+opponent_mode = "AI" # Výchozí režim je proti AI
+
+# Proměnné pro power-upy
+power_up = None # Power-up objekt
+power_up_type = None # Typ power-upu
+power_up_active = False # Stav power-upu
+power_up_timer = 0 # Časovač pro power-upy
+
+# Barvy pro power-upy
+power_up_colors = {
+    "size": (0, 255, 0),  # Zelená pro zvětšení pálky
+    "speed": (255, 0, 0) # Červená pro zrychlení míčku
+}
+
+# Zobrazení hlavního menu
 show_title_screen()
 
+# Hlavní herní smyčka
 while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+    for event in pygame.event.get(): # Zpracování událostí
+        if event.type == pygame.QUIT: # Pokud hráč zavře okno
             pygame.quit()
             sys.exit()
- 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_DOWN:
-                player_speed += 7
-            if event.key == pygame.K_UP:
-                player_speed -= 7
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_DOWN:
-                player_speed -= 7
-            if event.key == pygame.K_UP:
-                player_speed += 7
-    
-    ball_animation()
-    player_animation()
-    opponent_animation()
-    prekazka_animace()
 
-    # Vykreslení pozadí hry
-    screen.fill(bg_color)
-    pygame.draw.rect(screen, light_gray, player)
-    pygame.draw.rect(screen, light_gray, opponent)
-    pygame.draw.rect(screen, light_gray, prekazka)
-    pygame.draw.ellipse(screen, light_gray, ball)
-    pygame.draw.aaline(screen, light_gray, (screen_width / 2, 0), (screen_width / 2, screen_height))
+        if event.type == pygame.KEYDOWN: # Pokud je stisknuta klávesa
+            if event.key == pygame.K_DOWN: # Klávesa "šipka dolů"
+                player_speed += 7 # Zvýšení rychlosti hráče
+            if event.key == pygame.K_UP: # Klávesa "šipka nahoru"
+                player_speed -= 7 # Snížení rychlosti hráče
+        if event.type == pygame.KEYUP: # Pokud je klávesa uvolněna
+            if event.key == pygame.K_DOWN: # Klávesa "šipka dolů"
+                player_speed -= 7 # Snížení rychlosti hráče
+            if event.key == pygame.K_UP: # Klávesa "šipka nahoru"
+                player_speed += 7 # Zvýšení rychlosti hráče
 
-    if score_time:
-        ball_restart()
+    ball_animation() # Animace míčku
+    player_animation() # Animace hráče
+    opponent_animation() # Animace soupeře
+    prekazka_animace() # Animace překážky
 
-    player_text = game_font.render(f"{player_score}", False, light_gray)
-    screen.blit(player_text, (660, 470))
+    screen.fill(bg_color) # Vykreslení pozadí
+    pygame.draw.rect(screen, light_gray, player) # Vykreslení hráče
+    pygame.draw.rect(screen, light_gray, opponent) # Vykreslení soupeře
+    pygame.draw.rect(screen, light_gray, prekazka) # Vykreslení překážky
+    pygame.draw.ellipse(screen, light_gray, ball) # Vykreslení míčku
+    pygame.draw.aaline(screen, light_gray, (screen_width / 2, 0), (screen_width / 2, screen_height)) # Vykreslení čáry uprostřed
 
-    opponent_text = game_font.render(f"{opponent_score}", False, light_gray)
-    screen.blit(opponent_text, (600, 470))
+    if score_time: # Pokud je odpočítávání po gólu aktivní
+        ball_restart() # Restart míčku
 
-    pygame.display.flip()
-    clock.tick(60)
+    player_text = game_font.render(f"{player_score}", False, light_gray) # Vytvoření textu skóre hráče
+    screen.blit(player_text, (660, 470)) # Vykreslení skóre hráče
+
+    opponent_text = game_font.render(f"{opponent_score}", False, light_gray) # Vytvoření textu skóre soupeře
+    screen.blit(opponent_text, (600, 470)) # Vykreslení skóre soupeře
+
+    # Generování power-upu
+    if random.random() < 0.001 and not power_up:  # 0.5% šance na generování power-upu
+        power_up = pygame.Rect(random.randint(100, screen_width - 100), random.randint(100, screen_height - 100), 40, 40)
+        power_up_type = random.choice(["size", "speed"])
+
+    # Vykreslení power-upu
+    if power_up:
+        pygame.draw.rect(screen, power_up_colors[power_up_type], power_up)
+
+    # Deaktivace power-upu po určitém čase
+    if power_up_active:
+        power_up_timer += 1
+        if power_up_timer > 500:  # 500 snímků = cca 8 sekund
+            power_up_active = False
+            player.height = 140
+            ball_speed_x /= 1.5
+            ball_speed_y /= 1.5
+            power_up_timer = 0
+
+    pygame.display.flip() # Aktualizace obrazovky
+    clock.tick(60) # Omezení FPS na 60
 
     # Nastavení ukládání výsledků do databáze
     if opponent_score >= 5 or player_score >= 5:
