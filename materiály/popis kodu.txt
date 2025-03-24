@@ -1,112 +1,65 @@
-Jasně, pojďme si tento kód rozložit na jednotlivé části a vysvětlit, co každá z nich dělá.
+Tento kód představuje implementaci klasické hry Pong v Pythonu pomocí knihovny Pygame. Hra zahrnuje hráče, soupeře (ovládaného AI nebo druhým hráčem), míček, překážku a power-upy. Výsledky her se ukládají do databáze SQLite.
 
-1. Import modulů a inicializace:
+**Základní struktura kódu:**
 
-python
-import pygame, sys, random, sqlite3, math
+1.  **Import modulů:**
+    * `pygame`: Pro grafiku, zvuk a vstup.
+    * `sys`: Pro ukončení aplikace.
+    * `random`: Pro generování náhodných čísel.
+    * `sqlite3`: Pro práci s databází SQLite.
+    * `math`: Pro matematické operace (i když se v tomto kódu přímo nevyužívá).
+2.  **Inicializace:**
+    * `pygame.init()`: Inicializace Pygame.
+    * `clock = pygame.time.Clock()`: Vytvoření objektu pro řízení FPS.
+3.  **Nastavení obrazovky a objektů:**
+    * Definování rozměrů okna a vytvoření herní plochy.
+    * Vytvoření objektů `Rect` pro míček, hráče, soupeře a překážku.
+4.  **Nastavení proměnných:**
+    * Barvy, rychlosti, skóre, písmo, zvuky.
+    * Stav hry (např. `ball_moving`, `score_time`).
+    * Režim hry (`opponent_mode`).
+    * Proměnné pro power-upy.
+5.  **Funkce:**
+    * `ball_animation()`: Pohyb míčku, kolize, góly, rotace, power-upy.
+    * `player_animation()`: Pohyb hráče.
+    * `opponent_animation()`: Pohyb soupeře (AI nebo druhý hráč).
+    * `prekazka_animace()`: Pohyb překážky.
+    * `ball_restart()`: Restart míčku po gólu.
+    * `show_title_screen()`: Zobrazení hlavního menu.
+    * `show_difficulty_menu()`: Zobrazení menu pro výběr obtížnosti AI.
+    * `set_difficulty()`: Nastavení rychlosti AI.
+    * `show_databse()`: Zobrazení historie výsledků z databáze.
+6.  **Databáze SQLite:**
+    * Vytvoření/otevření databáze `game_history.db`.
+    * Vytvoření tabulky `history` pro ukládání výsledků.
+    * Funkce pro vkládání a načítání dat.
+7.  **Hlavní herní smyčka:**
+    * Zpracování událostí (vstup z klávesnice, myši).
+    * Aktualizace pohybu objektů.
+    * Vykreslování herních prvků.
+    * Generování a vykreslování power-upů.
+    * Řízení FPS.
+    * Ukládání výsledků do databáze.
+8.  **Power-upy:**
+    * Náhodné generování power-upů s různými efekty (zvětšení pálky, zrychlení míče).
+    * Vykreslování a aplikace efektů power-upů.
+    * Deaktivace power-upů po uplynutí časového limitu.
 
-pygame.init()
-clock = pygame.time.Clock()
+**Klíčové prvky hry:**
 
+* **Pohyb a kolize:** Kód detailně řeší pohyb míčku, hráčů a překážky, včetně odrážení od stěn a kolizí mezi objekty.
+* **AI soupeře:** Soupeř ovládaný AI sleduje míček a snaží se ho odrazit. Obtížnost AI se nastavuje v menu.
+* **Power-upy:** Náhodně se generují power-upy, které ovlivňují hru (např. zvětší pálku hráče nebo zrychlí míček).
+* **Databáze výsledků:** Výsledky her se ukládají do databáze, což umožňuje sledovat historii her.
+* **Menu:** Hra obsahuje hlavní menu pro výběr režimu hry a menu pro nastavení obtížnosti AI.
 
-* pygame: Základní modul pro tvorbu her v Pythonu.
-* sys: Modul pro interakci s operačním systémem (např. ukončení hry).
-* random: Modul pro generování náhodných čísel (např. směr míčku).
-* sqlite3: Modul pro práci s databází SQLite.
-* math`: Modul pro matematické funkce (v tomto kódu není přímo využit, ale může být importován pro budoucí rozšíření).
-* pygame.init(): Inicializuje všechny potřebné moduly Pygame.
-* `clock = pygame.time.Clock(): Vytvoří objekt pro řízení frekvence snímků (FPS).
+**Vysvětlení klíčových částí kódu:**
 
-**2. Nastavení obrazovky a objektů hry:**
+* **`ball_animation()`:** Tato funkce zajišťuje pohyb míčku, odrážení od stěn a kolize s hráči a překážkou. Dále také řeší rotaci míčku a aplikaci power-upů.
+* **`player_animation()` a `opponent_animation()`:** Tyto funkce řídí pohyb hráčů. V případě AI soupeře, funkce sleduje pozici míčku a pohybuje soupeřem tak, aby míček odrazil.
+* **`prekazka_animace()`:** Tato funkce řídí pohyb překážky, která se pohybuje vertikálně po herní ploše.
+* **`ball_restart()`:** Tato funkce se volá po gólu a zobrazuje odpočítávání před restartováním míčku.
+* **`show_title_screen()`, `show_difficulty_menu()` a `show_databse()`:** Tyto funkce zobrazují herní menu a historii výsledků.
+* **Hlavní herní smyčka:** Tato smyčka řídí celou hru. Zpracovává události, aktualizuje stav hry a vykresluje herní prvky.
 
-python
-screen_width = 1280
-screen_height = 960
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Pong")
-
-ball = pygame.Rect(screen_width / 2 - 15, screen_height / 2 - 15, 30, 30)
-player = pygame.Rect(screen_width - 20, screen_height / 2 - 70, 10, 140)
-opponent = pygame.Rect(10, screen_height / 2 - 70, 10, 140)
-prekazka = pygame.Rect(screen_width / 2 - 5, screen_height / 1 - 70, 10, 180)
-
-
-* Nastavení rozměrů herního okna a jeho popisku.
-* Vytvoření objektů Rect pro míček, hráče, soupeře a překážku. Rect je objekt Pygame, který definuje obdélníkovou oblast a usnadňuje kolize.
-
-3. Nastavení barev, rychlostí a proměnných:
-
-python
-bg_color = pygame.Color("grey12")
-light_gray = (200, 200, 200)
-
-ball_speed_x = 7 * random.choice((1, -1))
-ball_speed_y = 7 * random.choice((1, -1))
-player_speed = 0
-opponent_speed = 10
-prekazka_speed = 12
-ball_moving = False
-score_time = True
-
-player_score = 0
-opponent_score = 0
-game_font = pygame.font.Font("freesansbold.ttf", 32)
-
-score_sound = pygame.mixer.Sound("score.ogg")
-
-opponent_mode = "AI"
-
-
-* Definování barev pro pozadí a objekty.
-* Nastavení počátečních rychlostí míčku, hráče, soupeře a překážky.
-* Inicializace proměnných pro skóre, písmo a zvuk.
-* Nastavení výchozího režimu hry na "AI".
-
-4. Funkce pro pohyb a logiku hry:
-
-* `ball_animation()`: Zajišťuje pohyb míčku, odrážení od stěn, detekci gólů a kolize s hráči.
-* `player_animation()`: Zajišťuje pohyb hráče a omezuje jeho pohyb na herní plochu.
-* `opponent_animation()`: Zajišťuje pohyb soupeře (AI nebo druhého hráče) a omezuje jeho pohyb.
-* `prekazka_animace()`: Zajišťuje pohyb překážky a její odrážení od okrajů herní plochy.
-* `ball_restart()`: Restartuje míček po gólu a zobrazuje odpočítávání.
-
-**5. Funkce pro zobrazení menu a databáze:**
-
-* `show_title_screen()`: Zobrazuje hlavní menu hry a umožňuje výběr režimu hry.
-* `show_difficulty_menu()`: Zobrazuje menu pro výběr obtížnosti AI.
-* `set_difficulty()`: Nastavuje rychlost AI podle zvolené obtížnosti.
-* `show_databse()`: Zobrazuje historii výsledků z databáze a umožňuje její vymazání.
-
-**6. Databáze SQLite:**
-
-```python
-conn = sqlite3.connect("game_history.db")
-cursor = conn.cursor()
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    player_score INTEGER,
-    opponent_score INTEGER
-)""")
-conn.commit()
-```
-
-* Vytvoření nebo otevření databáze `game_history.db`.
-* Vytvoření tabulky `history` pro ukládání výsledků her.
-
-**7. Hlavní herní smyčka:**
-
-```python
-while True:
-    # ... zpracování událostí, pohyb objektů, vykreslování ...
-    pygame.display.flip()
-    clock.tick(60)
-```
-
-* Hlavní smyčka hry, která se opakuje, dokud hráč nevypne hru.
-* Zpracovává události (klávesnice, myš), aktualizuje pohyb objektů, vykresluje herní prvky a řídí frekvenci snímků.
-* Ukládání výsledků do databáze po dosažení určitého skóre.
-
-**Stručně řečeno:**
-
-Tento kód implementuje jednoduchou hru Pong s možností hrát proti AI (s nastavitelnou obtížností) nebo proti druhému hráči. Dále obsahuje databázi pro ukládání historie výsledků a menu pro výběr režimu hry a zobrazení historie.
+Tento kód poskytuje komplexní implementaci hry Pong s různými funkcemi a herními režimy.
