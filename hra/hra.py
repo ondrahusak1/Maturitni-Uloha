@@ -427,7 +427,7 @@ while True:
     screen.blit(opponent_text, (600, 470)) # Vykreslení skóre soupeře
 
     # Generování power-upu
-    if random.random() < 0.001 and not power_up:  # 0.5% šance na generování power-upu
+    if random.random() < 0.005 and not power_up:  # 0.5% šance na generování power-upu
         power_up = pygame.Rect(random.randint(100, screen_width - 100), random.randint(100, screen_height - 100), 40, 40)
         power_up_type = random.choice(["size", "speed"])
 
