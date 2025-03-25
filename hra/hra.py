@@ -53,39 +53,67 @@ def show_title_screen():
                     opponent_mode = "historie" # Nastavení režimu hry na "historie"
                     show_databse() # Zobrazení historie výsledků
                     waiting = False
-# Funkce pro zobrazení databáze (historie výsledků)
+import pygame  # Import knihovny Pygame pro grafiku a události
+import sys  # Import modulu sys pro ukončení aplikace
+
+# Předpokládáme, že máte definované proměnné jako:
+# screen, bg_color, game_font, screen_width, screen_height, cursor, conn
+
 def show_databse():
-    screen.fill(bg_color) # Vyplnění obrazovky pozadím
+    screen.fill(bg_color)  # Vyplní obrazovku barvou pozadí
+    # Vytvoření textových objektů pro nadpisy a tlačítka
     history_text = game_font.render("Historie výsledků", True, light_gray)
     back_text = game_font.render("Zpět do hlavního menu", True, light_gray)
     delete_text = game_font.render("Vymazat historii", True, light_gray)
 
+    # Vytvoření obdélníků pro umístění textu na obrazovku
     history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3))
     back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5))
     delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3))
 
+    # Vykreslení textu na obrazovku
     screen.blit(history_text, history_rect)
     screen.blit(back_text, back_rect)
     screen.blit(delete_text, delete_rect)
-    pygame.display.flip()
+    pygame.display.flip()  # Aktualizace obrazovky
 
     # Načtení a zobrazení posledních 5 výsledků z databáze
     cursor.execute("SELECT player_score, opponent_score FROM history ORDER BY id DESC LIMIT 5")
-    history = cursor.fetchall()
-    for i, (player_score, opponent_score) in enumerate(history):
-        # Kontrola, zda jsou skóre už předformátovaná
+    history = cursor.fetchall()  # Načtení výsledků z databáze
+    for i, (player_score, opponent_score) in enumerate(history):  # Iterace přes výsledky
+        # Kontrola, zda jsou skóre již předformátovaná jako řetězce
         if isinstance(player_score, str) and isinstance(opponent_score, str):
             history_text = game_font.render(f"{player_score} - {opponent_score}", True, light_gray)
         else:
             # Původní formátování pro mód s AI
             history_text = game_font.render(f"Hráč: {player_score} - CPU: {opponent_score}", True, light_gray)
         
+        # Vykreslení výsledků na obrazovku
         screen.blit(history_text, (500, 400 + i * 30))
+
+    pygame.display.flip()  # Aktualizace obrazovky
+
+    # Zpracování událostí pro navigaci v menu databáze  # Použití globální proměnné (doporučuje se omezit)
+    global opponent_mode
+    waiting = False # Příznak pro řízení smyčky událostí
+    while waiting:
+        for event in pygame.event.get():  # Získání událostí z fronty
+            if event.type == pygame.QUIT:  # Pokud uživatel zavře okno
+                pygame.quit()  # Ukončení Pygame
+                sys.exit()  # Ukončení aplikace
+            if event.type == pygame.MOUSEBUTTONDOWN:  # Pokud uživatel klikne myší
+                if back_rect.collidepoint(event.pos):  # Pokud klikne na "Zpět do hlavního menu"
+                    waiting = False  # Ukončení smyčky událostí
+                    show_title_screen()  # Zobrazení hlavní obrazovky
+                if delete_rect.collidepoint(event.pos):  # Pokud klikne na "Vymazat historii"
+                    cursor.execute("DELETE FROM history")  # Smazání všech záznamů z databáze
+                    conn.commit()  # Potvrzení změn v databázi
+                    print("Historie zápasů byla smazána")  # Výpis zprávy do konzole
+                    opponent_mode = "historie" # Nastavení globální proměnné
 
     pygame.display.flip()
 
     # Zpracování událostí pro navigaci v menu databáze
-    global opponent_mode
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -203,6 +231,10 @@ def ball_animation():
     if ball.colliderect(prekazka):
         ball_speed_x *= -1.1 # Změna směru a rychlosti míčku po ose X
         ball_speed_y *= 1.1 # Změna rychlosti míčku po ose Y
+
+    if ball.colliderect(opponent) or ball.colliderect(player):
+        random_angle = random.uniform(-0.5, 0.5)  # Náhodná změna úhlu v určitém rozsahu
+        ball_speed_y += random_angle * abs(ball_speed_x)
 
     # Kolize míčku s power-upem
     if power_up and ball.colliderect(power_up):
@@ -422,6 +454,7 @@ while True:
         # Pro mód 2 hráčů ukládej skóre s označením hráčů
             cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
                        (f"Hráč1: {player_score}", f"Hráč2: {opponent_score}"))
+            show_title_screen()
         else:
         # Původní způsob ukládání pro mód s AI
             cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
@@ -430,5 +463,5 @@ while True:
             conn.commit()
             opponent_mode = None
             player_score, opponent_score = 0, 0
-
-        show_title_screen()
+        
+            show_title_screen()
