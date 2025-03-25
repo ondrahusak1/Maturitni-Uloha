@@ -56,28 +56,33 @@ def show_title_screen():
 # Funkce pro zobrazení databáze (historie výsledků)
 def show_databse():
     screen.fill(bg_color) # Vyplnění obrazovky pozadím
-    history_text = game_font.render("Historie výsledků", True, light_gray) # Vytvoření textu pro název
-    back_text = game_font.render("Zpět do hlavního menu", True, light_gray) # Vytvoření textu pro tlačítko "Zpět"
-    delete_text = game_font.render("Vymazat historii", True, light_gray) # Vytvoření textu pro tlačítko "Vymazat"
+    history_text = game_font.render("Historie výsledků", True, light_gray)
+    back_text = game_font.render("Zpět do hlavního menu", True, light_gray)
+    delete_text = game_font.render("Vymazat historii", True, light_gray)
 
-    history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3)) # Pozice textu "Historie výsledků"
-    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5)) # Pozice textu "Zpět"
-    delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3)) # Pozice textu "Vymazat"
+    history_rect = history_text.get_rect(center=(screen_width / 2, screen_height / 3))
+    back_rect = back_text.get_rect(center=(screen_width / 2, screen_height / 1.5))
+    delete_rect = delete_text.get_rect(center=(screen_width / 2, screen_height / 1.3))
 
-    screen.blit(history_text, history_rect) # Vykreslení textu "Historie výsledků"
-    screen.blit(back_text, back_rect) # Vykreslení textu "Zpět"
-    screen.blit(delete_text, delete_rect) # Vykreslení textu "Vymazat"
-    pygame.display.flip() # Aktualizace obrazovky
+    screen.blit(history_text, history_rect)
+    screen.blit(back_text, back_rect)
+    screen.blit(delete_text, delete_rect)
+    pygame.display.flip()
 
     # Načtení a zobrazení posledních 5 výsledků z databáze
     cursor.execute("SELECT player_score, opponent_score FROM history ORDER BY id DESC LIMIT 5")
-    history = cursor.fetchall() # Načtení výsledků z databáze
+    history = cursor.fetchall()
     for i, (player_score, opponent_score) in enumerate(history):
-        history_text = f"Hráč: {player_score} - CPU: {opponent_score}" # Formátování textu pro zobrazení výsledků
-        history_rect = game_font.render(history_text, True, light_gray) # Vytvoření textu pro zobrazení výsledků
-        screen.blit(history_rect, (500, 400 + i * 30)) # Vykreslení textu s výsledky
+        # Kontrola, zda jsou skóre už předformátovaná
+        if isinstance(player_score, str) and isinstance(opponent_score, str):
+            history_text = game_font.render(f"{player_score} - {opponent_score}", True, light_gray)
+        else:
+            # Původní formátování pro mód s AI
+            history_text = game_font.render(f"Hráč: {player_score} - CPU: {opponent_score}", True, light_gray)
+        
+        screen.blit(history_text, (500, 400 + i * 30))
 
-    pygame.display.flip() # Aktualizace obrazovky
+    pygame.display.flip()
 
     # Zpracování událostí pro navigaci v menu databáze
     global opponent_mode
@@ -88,14 +93,14 @@ def show_databse():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_rect.collidepoint(event.pos): # Pokud klikneme na "Zpět"
+                if back_rect.collidepoint(event.pos):
                     waiting = False
-                    show_title_screen() # Zobrazení hlavního menu
-                if delete_rect.collidepoint(event.pos): # Pokud klikneme na "Vymazat"
-                    cursor.execute("DELETE FROM history") # Vymazání historie z databáze
-                    conn.commit() # Uložení změn do databáze
-                    print("Historie zápasů byla smazána") # Výpis potvrzení do konzole
-                    opponent_mode = "historie" # Nastavení režimu hry
+                    show_title_screen()
+                if delete_rect.collidepoint(event.pos):
+                    cursor.execute("DELETE FROM history")
+                    conn.commit()
+                    print("Historie zápasů byla smazána")
+                    opponent_mode = "historie"
 
 # Funkce pro zobrazení menu výběru obtížnosti AI
 def show_difficulty_menu():
@@ -413,9 +418,17 @@ while True:
 
     # Nastavení ukládání výsledků do databáze
     if opponent_score >= 5 or player_score >= 5:
-        cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", (player_score, opponent_score))
-        conn.commit()
-        opponent_mode = None
-        player_score, opponent_score = 0,0
+        if opponent_mode == "Player2":
+        # Pro mód 2 hráčů ukládej skóre s označením hráčů
+            cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
+                       (f"Hráč1: {player_score}", f"Hráč2: {opponent_score}"))
+        else:
+        # Původní způsob ukládání pro mód s AI
+            cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
+                       (player_score, opponent_score))
+    
+            conn.commit()
+            opponent_mode = None
+            player_score, opponent_score = 0, 0
 
         show_title_screen()
