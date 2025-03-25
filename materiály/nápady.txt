@@ -1,0 +1,23 @@
+Tvorba prezentace pro investora:
+Sestavení prezentace s důrazem na obchodní hodnotu projektu.
+Vytvoření vizuálně atraktivních slajdů.
+Příprava finančních projekcí a obchodního plánu.
+Vytvoření prezentace s důrazem na technické aspekty projektu a inovace.
+
+Tvorba manuálu pro uživatele:
+Napsání podrobného návodu k použití aplikace.
+Vytvoření vizuálních tutoriálů (obrázky, videa).
+Sestavení FAQ (často kladené otázky).
+Vytvoření interaktivního návodu.
+
+Tvorba dokumentace:
+Vytvoření technické dokumentace pro vývojáře.
+Napsání dokumentace API.
+Vytvoření diagramů a schémat architektury projektu.
+Vytvoření dokumentace pro uživatele.
+
+Tvorba přehledu pro nového spolupracovníka:
+Napsání úvodního dokumentu s popisem projektu.
+Vytvoření seznamu klíčových technologií a nástrojů.
+Sestavení seznamu úkolů a priorit pro nového spolupracovníka.
+Vytvoření diagramu závislostí.
