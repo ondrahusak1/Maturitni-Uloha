@@ -341,8 +341,8 @@ pygame.display.set_caption("Pong") # Nastavení titulku okna
 
 # Vytvoření herních objektů
 ball = pygame.Rect(screen_width / 2 - 15, screen_height / 2 - 15, 30, 30) # Míček
-player = pygame.Rect(screen_width - 20, screen_height / 2 - 70, 10, 140) # Hráč
-opponent = pygame.Rect(10, screen_height / 2 - 70, 10, 140) # Soupeř
+player = pygame.Rect(screen_width - 20, screen_height / 2 - 70, 10, 120) # Hráč
+opponent = pygame.Rect(10, screen_height / 2 - 70, 10, 120) # Soupeř
 prekazka = pygame.Rect(screen_width / 2 - 5, screen_height / 1 - 70, 10, 180) # Překážka
 
 # Nastavení barev
