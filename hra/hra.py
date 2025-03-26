@@ -201,7 +201,6 @@ def ball_animation():
 
     # Detekce gólů
     if ball.left <= 0: # Pokud míček opustí levou stranu obrazovky
-        pygame.mixer.Sound.play(score_sound) # Přehrání zvuku gólu
         player_score += 1 # Zvýšení skóre hráče
         score_time = pygame.time.get_ticks() # Uložení času gólu
         prekazka.x = screen_width / 2 - 5 # Reset pozice překážky
@@ -210,7 +209,6 @@ def ball_animation():
         
 
     if ball.right >= screen_width: # Pokud míček opustí pravou stranu obrazovky
-        pygame.mixer.Sound.play(score_sound) # Přehrání zvuku gólu
         opponent_score += 1 # Zvýšení skóre soupeře
         score_time = pygame.time.get_ticks() # Uložení času gólu
         prekazka.x = screen_width / 2 - 5 # Reset pozice překážky
@@ -240,10 +238,16 @@ def ball_animation():
     if power_up and ball.colliderect(power_up):
         power_up_active = True # Aktivace power-upu
         if power_up_type == "size": # Pokud je typ power-upu "size"
-            player.height *= 1.5 # Zvětšení výšky pálky hráče
+            player.height *= 1.2 # Zvětšení výšky pálky hráče
+            opponent.height *= 1.2 
         elif power_up_type == "speed": # Pokud je typ power-upu "speed"
             ball_speed_x *= 1.5 # Zrychlení míčku po ose X
             ball_speed_y *= 1.5 # Zrychlení míčku po ose Y
+        elif power_up_type == "slow":
+            original_ball_speed_x = ball_speed_x
+            original_ball_speed_y = ball_speed_y
+            ball_speed_x *= 0.5
+            ball_speed_y *= 0.5
         power_up = None # Odstranění power-upu z obrazovky
 
     ball_angle += 5 # Zvýšení úhlu rotace míčku
@@ -366,9 +370,10 @@ player_score = 0
 opponent_score = 0
 game_font = pygame.font.Font("freesansbold.ttf", 32)
 
-# Načtení zvuků
-score_sound = pygame.mixer.Sound("score.ogg") # Zvuk gólu
-
+power_ups = []
+power_up_types = []
+power_up_active = False
+power_up_timer = 0
 # Nastavení režimu hry
 opponent_mode = "AI" # Výchozí režim je proti AI
 
@@ -381,7 +386,8 @@ power_up_timer = 0 # Časovač pro power-upy
 # Barvy pro power-upy
 power_up_colors = {
     "size": (0, 255, 0),  # Zelená pro zvětšení pálky
-    "speed": (255, 0, 0) # Červená pro zrychlení míčku
+    "speed": (255, 0, 0),  # Červená pro zrychlení míčku
+    "slow": (0, 0, 255) #Modrá pro zpomalení míčku
 }
 
 # Zobrazení hlavního menu
@@ -428,21 +434,27 @@ while True:
 
     # Generování power-upu
     if random.random() < 0.005 and not power_up:  # 0.5% šance na generování power-upu
-        power_up = pygame.Rect(random.randint(100, screen_width - 100), random.randint(100, screen_height - 100), 40, 40)
-        power_up_type = random.choice(["size", "speed"])
+        power_up_x = random.randint(100, screen_width - 100)
+        power_up_y = random.randint(100, screen_height - 100)
+        power_up = pygame.Rect(power_up_x, power_up_y, 30, 30)  # Zachování původní struktury Rect
+        power_up_type = random.choice(["size", "speed", "slow"])
+        print(f"Typ power-pup: {power_up_type}")
 
     # Vykreslení power-upu
     if power_up:
-        pygame.draw.rect(screen, power_up_colors[power_up_type], power_up)
+        pygame.draw.circle(screen, power_up_colors[power_up_type], power_up.center, 15)
 
     # Deaktivace power-upu po určitém čase
     if power_up_active:
+        print(f"Časovač: {power_up_timer}")
         power_up_timer += 1
-        if power_up_timer > 500:  # 500 snímků = cca 8 sekund
+        if power_up_timer > 240:  # 500 snímků = cca 8 sekund
+            print("Deaktivace power-upu!")
             power_up_active = False
-            player.height = 140 
-            ball_speed_x /= 1.5 #Zrychlení míčku 1,5krát
-            ball_speed_y /= 1.5 #Zrychlení míčku 1,5krát
+            player.height = 140
+            opponent.height = 140
+            ball_speed_x /= 1.5 #Zpomalení míčku 1,5krát
+            ball_speed_y /= 1.5 #Zpomalení míčku 1,5krát
             power_up_timer = 0
 
     pygame.display.flip() # Aktualizace obrazovky
@@ -454,12 +466,6 @@ while True:
         # Pro mód 2 hráčů ukládej skóre s označením hráčů
             cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
                        (f"Hráč1: {player_score}", f"Hráč2: {opponent_score}"))
-            show_title_screen()
-        else:
-        # Původní způsob ukládání pro mód s AI
-            cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
-                       (player_score, opponent_score))
-    
             conn.commit()
             opponent_mode = None
             player_score, opponent_score = 0, 0
