@@ -462,7 +462,6 @@ while True:
 
     # Nastavení ukládání výsledků do databáze
     if opponent_score >= 5 or player_score >= 5:
-        if opponent_mode == "Player2":
         # Pro mód 2 hráčů ukládej skóre s označením hráčů
             cursor.execute("INSERT INTO history (player_score, opponent_score) VALUES (?, ?)", 
                        (f"Hráč1: {player_score}", f"Hráč2: {opponent_score}"))
